@@ -5,8 +5,12 @@
  *  Author: NormalUser
  */ 
 
-//#include "usart.h"
-
+/* Some of the uart code taken from:
+ * Copyright 2011 Mika Tuupola
+ *
+ * Licensed under the MIT license:
+ *   http://www.opensource.org/licenses/mit-license.php
+ */
 #include <avr/io.h>
 #include <stdio.h>
 

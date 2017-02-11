@@ -16,6 +16,7 @@
 #include "hardware.h"
 #include "general_IO.h"
 #include "usart.h"
+#include "i2c_comms.h"
 
 
 
@@ -59,15 +60,33 @@ static void init_ports(void){
 
 int main(void)
 {
+	unsigned char ResetSrc = MCUCSR;   // save reset source
+	MCUCSR = 0x00;  // cleared for next reset detection
+
 	init_ports();
 	set_initial_IO_states();
 	
 	init_PC_serial(MYUBRR);
-	
+	init_i2c();
+	int rv;
+#define CH1_DAC_ID    0x90        // I2C 24AA128 EEPROM Device Identifier
+#define CH1_DAC_ADDR  0x06        // I2C 24AA128 EEPROM Device Address
+#define CH1_DA_ADDR		0x4E
+
 	stdout = &usart_output;
 	stdin  = &usart_input;
 	
 	char input;
+	
+	/*print out the last reset cause*/
+	if (ResetSrc & PORF)
+	puts("PWR RESET\n\r");
+	if (ResetSrc & EXTRF)
+	puts("EXT RESET\n\r");
+	if (ResetSrc & BORF)
+	puts("BOD RESET\n\r");
+	if (ResetSrc & WDRF)
+	puts("WDT RESET\n\r");
 	
 	red_led(1);
 	_delay_ms(500);
@@ -77,6 +96,8 @@ int main(void)
 	_delay_ms(500);
 	green_led(0);
 	_delay_ms(500);
+
+char buffer[2]= {0b00000000,0b11110000};
 	
     while (1) 
     {
@@ -84,6 +105,7 @@ int main(void)
 		CH1_led(1);
 		_delay_ms(DELAY_TIME);
 		CH2_led(1);
+		//EN_power(1);
 		_delay_ms(DELAY_TIME);
 		CH3_led(1);
 		_delay_ms(DELAY_TIME);
@@ -99,8 +121,11 @@ int main(void)
 		CH4_led(0);
 		green_led(0);
 		red_led(0);
-		//USART_putchar(sendData);
-		puts("Hello world!");
+puts("Hello world!");
+		rv = i2c_writebyte(CH1_DA_ADDR,buffer[0],buffer[1]);
+printf("i2c write return: %i\n", rv);		
+//USART_putchar(sendData);
+		
 		       // input = getchar();
 		        //printf("You wrote %c\n", input);
 		_delay_ms(2000);

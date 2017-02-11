@@ -37,6 +37,7 @@ SUBDIRS :=
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
+../i2c_comms.c \
 ../main.c \
 ../general_IO.c \
 ../usart.c
@@ -49,21 +50,25 @@ ASM_SRCS +=
 
 
 OBJS +=  \
+i2c_comms.o \
 main.o \
 general_IO.o \
 usart.o
 
 OBJS_AS_ARGS +=  \
+i2c_comms.o \
 main.o \
 general_IO.o \
 usart.o
 
 C_DEPS +=  \
+i2c_comms.d \
 main.d \
 general_IO.d \
 usart.d
 
 C_DEPS_AS_ARGS +=  \
+i2c_comms.d \
 main.d \
 general_IO.d \
 usart.d
@@ -82,6 +87,8 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+
+
 
 
 

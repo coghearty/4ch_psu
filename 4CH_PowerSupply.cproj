@@ -150,6 +150,12 @@
     <Compile Include="hardware.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="i2c_comms.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c_comms.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
