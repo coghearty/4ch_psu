@@ -69,9 +69,8 @@ int main(void)
 	init_PC_serial(MYUBRR);
 	init_i2c();
 	int rv;
-#define CH1_DAC_ID    0x90        // I2C 24AA128 EEPROM Device Identifier
-#define CH1_DAC_ADDR  0x06        // I2C 24AA128 EEPROM Device Address
-#define CH1_DA_ADDR		0x4E
+
+
 
 	stdout = &usart_output;
 	stdin  = &usart_input;
@@ -98,7 +97,7 @@ int main(void)
 	_delay_ms(500);
 
 char buffer[2]= {0b00000000,0b11110000};
-	
+	uint16_t v_data = 0x7FF;
     while (1) 
     {
 
@@ -122,7 +121,7 @@ char buffer[2]= {0b00000000,0b11110000};
 		green_led(0);
 		red_led(0);
 puts("Hello world!");
-		rv = i2c_writebyte(CH1_DA_ADDR,buffer[0],buffer[1]);
+		rv = i2c_DAC101C08x_write(CH1_DAC_ADDR,DAC_CONFIG,v_data);
 printf("i2c write return: %i\n", rv);		
 //USART_putchar(sendData);
 		

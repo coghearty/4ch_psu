@@ -32,7 +32,12 @@ unsigned char i2c_transmit(unsigned char type) {
 	return (TWSR & 0xF8);
 }
 
-int i2c_writebyte(unsigned int dev_addr,char data1, char data2) {
+int i2c_DAC101C08x_write(unsigned int dev_addr, uint8_t config, uint16_t data) {
+	// Take the top 4 bits of config and the top 4 valid bits (data is actually a 12 bit number) and or them together
+	uint8_t top_msg = (config & 0xF0) | (0x0F & (data >> 8));
+	// Take the bottom octet of data
+	uint8_t lower_msg = (data & 0x00FF);
+
 	unsigned char n = 0;
 	unsigned char twi_status;
 	char r_val = 2;
@@ -57,27 +62,14 @@ int i2c_writebyte(unsigned int dev_addr,char data1, char data2) {
 	r_val = 5;
 	if (twi_status != TW_MT_SLA_ACK) goto i2c_quit;
 	r_val = 6;
-	//// Send the High 8-bit of I2C Address
-	//TWDR = i2c_address >> 8;
-	//// Transmit I2C Data
-	//twi_status=i2c_transmit(I2C_DATA);
-	//// Check the TWSR status
-	//if (twi_status != TW_MT_DATA_ACK) goto i2c_quit;
-	//// Send the Low 8-bit of I2C Address
-	//TWDR = i2c_address;
-	//// Transmit I2C Data
-	//twi_status=i2c_transmit(I2C_DATA);
-	//// Check the TWSR status
-	//if (twi_status != TW_MT_DATA_ACK) goto i2c_quit;
-	// Put data into data register and start transmission
-	TWDR = data1;
+	TWDR = top_msg;
 	// Transmit I2C Data
 	twi_status=i2c_transmit(I2C_DATA);
 	// Check the TWSR status
 	if (twi_status != TW_MT_DATA_ACK) goto i2c_quit;
 	r_val = 7;
 	// Put data into data register and start transmission
-	TWDR = data2;
+	TWDR = lower_msg;
 	// Transmit I2C Data
 	twi_status=i2c_transmit(I2C_DATA);
 	// Check the TWSR status
