@@ -40,4 +40,9 @@ int i2c_DAC101C08x_read(unsigned int dev_addr, uint16_t *data);
 int set_DAC_mV(unsigned char channel, unsigned int millivolts);
 int read_DAC_mV(unsigned char channel, unsigned int *millivolts);
 
+uint16_t CH1_DAC_read_mV;
+uint16_t CH2_DAC_read_mV;
+uint16_t CH3_DAC_read_mV;
+uint16_t CH4_DAC_read_mV;
+
 #endif /* I2C_COMMS_H_ */

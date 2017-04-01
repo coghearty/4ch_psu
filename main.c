@@ -10,6 +10,7 @@
 #include <util/delay.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <avr/interrupt.h>
 
 #define DELAY_TIME 1000
 
@@ -18,8 +19,7 @@
 #include "usart.h"
 #include "i2c_comms.h"
 #include "adc.h"
-
-
+#include "timers.h"
 
 static void init_ports(void){
 	PORTA = 0x00;
@@ -37,8 +37,7 @@ static void init_ports(void){
 	DDRD &= ~SW_AUTO & ~SW_OFF & ~SW_ON & ~PB_SNOOZE;	//set direction to inputs
 	PORTD = SW_AUTO | SW_OFF | SW_ON | PB_SNOOZE;	//set input pull-up resistors
 	
-	DDRE &= ~SW_ENC1 & ~SW_ENC2 & ~ENC1B & ~ENC1A & ~ENC2B & ~ENC2A;
-	PORTE |= SW_ENC1 | SW_ENC2;
+
 }
 
 static void set_initial_IO_states(void){
@@ -59,6 +58,7 @@ static void set_initial_IO_states(void){
 }
 
 
+
 int main(void)
 {
 	unsigned char ResetSrc = MCUCSR;   // save reset source
@@ -68,18 +68,9 @@ int main(void)
 	set_initial_IO_states();
 	
 	init_PC_serial(MYUBRR);
-	init_i2c();
-	
-	init_adc();
-	enable_adc();
-	
-	int rv;
-
 	stdout = &usart_output;
 	stdin  = &usart_input;
-	
 	char input;
-	
 	/*print out the last reset cause*/
 	if (ResetSrc & PORF)
 	puts("PWR RESET\n\r");
@@ -89,6 +80,20 @@ int main(void)
 	puts("BOD RESET\n\r");
 	if (ResetSrc & WDRF)
 	puts("WDT RESET\n\r");
+	
+	
+	init_i2c();
+	
+	init_adc();
+	enable_adc();
+	
+	init_timers();
+	init_encoders();
+	
+	int rv;
+	timer0_triggered = 0;
+	timer1_triggered = 0;
+
 	
 	red_led(1);
 	_delay_ms(500);
@@ -104,16 +109,18 @@ int main(void)
 
 	uint16_t v_data = 2048; //4094; //0x7FF;
 	uint16_t rcv_data = 0x0000;
-	uint8_t adc_raw = 0;
+	uint8_t adc_L = 0;
+	uint8_t adc_H = 0;
+	uint16_t adc_raw = 0;
 	
-	EN_power(1);
+	//EN_power(1);
 	
-	TCNT0 = 0x00;
-	TCCR0 |= (1<<CS02) | (1<<CS01) | (1<<CS00); //set prescaler of 1024
+
+	sei();	//enable global interrupts
 	while (1)
 	{
 		
-		if(PIND & PB_SNOOZE)
+		/*if(PIND & PB_SNOOZE)
 		CH4_led(0);
 		else
 		CH4_led(1);
@@ -131,63 +138,60 @@ int main(void)
 		if(PIND & SW_ON)
 		CH3_led(0);
 		else
-		CH3_led(1);
-/*
-		CH1_led(1);
-		_delay_ms(DELAY_TIME);
-		CH2_led(1);
-		
-		_delay_ms(DELAY_TIME);
-		CH3_led(1);
-		_delay_ms(DELAY_TIME);
-		CH4_led(1);
-		_delay_ms(DELAY_TIME);
-		green_led(1);
-		_delay_ms(DELAY_TIME);
-		red_led(1);
-		_delay_ms(DELAY_TIME);
-		CH1_led(0);
-		CH2_led(0);
-		CH3_led(0);
-		CH4_led(0);
-		green_led(0);
-		red_led(0);*/
-		/*puts("Hello world!");
-		
-		adc_raw = ADCH;
-		printf("CH0 raw adc: %u\n", adc_raw);
+		CH3_led(1);*/
 
-		rv = read_DAC_mV(CHANNEL_1,&rcv_data);
-		//printf("i2c read return: %i\n", rv);
-		printf("CH1 read data: %u\n", rcv_data);
-		rv = set_DAC_mV(CHANNEL_1,500); 
-		rv = read_DAC_mV(CHANNEL_2,&rcv_data);
-		printf("CH2 read data: %u\n", rcv_data);
-		rv = set_DAC_mV(CHANNEL_2,100);
-		rv = read_DAC_mV(CHANNEL_3,&rcv_data);
-		printf("CH3 read data: %u\n", rcv_data);
-		rv = set_DAC_mV(CHANNEL_3,500);
-		rv = read_DAC_mV(CHANNEL_4,&rcv_data);
-		printf("CH4 read data: %u\n", rcv_data);
-		rv = set_DAC_mV(CHANNEL_4,500);
-		*/
+		
+		
+
+
+
+		
 		//printf("i2c write return: %i\n", rv);
 		
 
-//USART_putchar(sendData);
+		//USART_putchar(sendData);
 		
 		// input = getchar();
 		//printf("You wrote %c\n", input);
 		//_delay_ms(2000);
 		
-		
-		if((TIFR & TOV0) == 1){
-			PORTC ^= LED_GRN;
-			//PORTA ^= (1 << CH2_EN);
-			TCNT0 = 0x00;
-			TIFR |= (1<<TOV0);
-		}
 
+		if(timer0_triggered){
+			toggle_green_led();
+			timer0_triggered = 0;
+		}
+		
+		/*1 second timer heartbeat*/
+		if(timer1_triggered){
+			toggle_red_led();
+			timer1_triggered = 0;
+			puts("Hello World!");
+			rv = read_DAC_mV(CHANNEL_1,&CH1_DAC_read_mV);
+			//printf("i2c read return: %i\n", rv);
+			
+			rv = set_DAC_mV(CHANNEL_1,500);
+			rv = read_DAC_mV(CHANNEL_2,&CH2_DAC_read_mV);
+			
+			rv = set_DAC_mV(CHANNEL_2,100);
+			rv = read_DAC_mV(CHANNEL_3,&CH3_DAC_read_mV);
+			
+			rv = set_DAC_mV(CHANNEL_3,500);
+			rv = read_DAC_mV(CHANNEL_4,&CH4_DAC_read_mV);
+
+			rv = set_DAC_mV(CHANNEL_4,500);
+			/*printf("CH1 read data: %u\n", CH1_DAC_read_mV);
+			printf("CH2 read data: %u\n", CH2_DAC_read_mV);
+			printf("CH3 read data: %u\n", CH3_DAC_read_mV);
+			printf("CH4 read data: %u\n", CH4_DAC_read_mV);*/
+			
+			adc_L = ADCL;
+			adc_H = ADCH;
+			adc_raw = (adc_H << 8) | (adc_L & 0xFF);
+			/*printf("CH0 raw adc_H: %u\n", adc_H);
+			printf("CH0 raw adc_L: %u\n", adc_L);*/
+			printf("CH0 raw adc: %u\n", adc_raw);
+			printf("ENC1 count: %u\n", encoder1_count);
+		}
 		
 
 	}

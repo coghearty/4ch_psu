@@ -15,13 +15,14 @@ void init_adc(void){
 	ADMUX &= ~(1 << REFS0)  & ~(1 << REFS1);
 	
 	/*Set the analog input to be read (start with ADC3) */
-	ADMUX |= (1 << MUX1); // | (1 << MUX0);
+	ADMUX |= (1 << MUX1) | (1 << MUX0);
 	
 	/*Set the ADC to free-running mode (auto-trigger) */
 	ADCSRA |= (1 << ADATE);
 	
 	/*for now, left adjust output data so we only need to read 1 register (now only 8 bits) */
-	ADMUX |= (1 << ADLAR);
+	//ADMUX |= (1 << ADLAR);
+	ADMUX &= ~(1 << ADLAR);
 	
 	
 }
