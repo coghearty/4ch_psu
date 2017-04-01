@@ -17,6 +17,7 @@
 #include "general_IO.h"
 #include "usart.h"
 #include "i2c_comms.h"
+#include "adc.h"
 
 
 
@@ -33,10 +34,10 @@ static void init_ports(void){
 	PORTC = LED_GRN | LED_RED;		//set initial output state high
 	PORTC |= CH4_ILIM | CH3_ILIM;	//set input pull-up resistors
 	
-	DDRD |= SW_AUTO | SW_OFF | SW_ON | PB_SNOOZE;
+	DDRD &= ~SW_AUTO & ~SW_OFF & ~SW_ON & ~PB_SNOOZE;	//set direction to inputs
 	PORTD = SW_AUTO | SW_OFF | SW_ON | PB_SNOOZE;	//set input pull-up resistors
 	
-	DDRE |= SW_ENC1 | SW_ENC2 | ENC1B | ENC1A | ENC2B | ENC2A;
+	DDRE &= ~SW_ENC1 & ~SW_ENC2 & ~ENC1B & ~ENC1A & ~ENC2B & ~ENC2A;
 	PORTE |= SW_ENC1 | SW_ENC2;
 }
 
@@ -68,9 +69,11 @@ int main(void)
 	
 	init_PC_serial(MYUBRR);
 	init_i2c();
+	
+	init_adc();
+	enable_adc();
+	
 	int rv;
-
-
 
 	stdout = &usart_output;
 	stdin  = &usart_input;
@@ -95,17 +98,45 @@ int main(void)
 	_delay_ms(500);
 	green_led(0);
 	_delay_ms(500);
-
+	
+	//PORTB |= CH1_ISET;
+	PORTB |= CH2_ISET;
 
 	uint16_t v_data = 2048; //4094; //0x7FF;
 	uint16_t rcv_data = 0x0000;
+	uint8_t adc_raw = 0;
+	
+	EN_power(1);
+	
+	TCNT0 = 0x00;
+	TCCR0 |= (1<<CS02) | (1<<CS01) | (1<<CS00); //set prescaler of 1024
 	while (1)
 	{
-
+		
+		if(PIND & PB_SNOOZE)
+		CH4_led(0);
+		else
+		CH4_led(1);
+		
+		if(PIND & SW_AUTO)
+		CH1_led(0);
+		else
+		CH1_led(1);
+		
+		if(PIND & SW_OFF)
+		CH2_led(0);
+		else
+		CH2_led(1);
+		
+		if(PIND & SW_ON)
+		CH3_led(0);
+		else
+		CH3_led(1);
+/*
 		CH1_led(1);
 		_delay_ms(DELAY_TIME);
 		CH2_led(1);
-		//EN_power(1);
+		
 		_delay_ms(DELAY_TIME);
 		CH3_led(1);
 		_delay_ms(DELAY_TIME);
@@ -120,24 +151,26 @@ int main(void)
 		CH3_led(0);
 		CH4_led(0);
 		green_led(0);
-		red_led(0);
-		puts("Hello world!");
+		red_led(0);*/
+		/*puts("Hello world!");
 		
+		adc_raw = ADCH;
+		printf("CH0 raw adc: %u\n", adc_raw);
 
 		rv = read_DAC_mV(CHANNEL_1,&rcv_data);
 		//printf("i2c read return: %i\n", rv);
 		printf("CH1 read data: %u\n", rcv_data);
-		rv = set_DAC_mV(CHANNEL_1,1234); 
+		rv = set_DAC_mV(CHANNEL_1,500); 
 		rv = read_DAC_mV(CHANNEL_2,&rcv_data);
 		printf("CH2 read data: %u\n", rcv_data);
-		rv = set_DAC_mV(CHANNEL_2,1324);
+		rv = set_DAC_mV(CHANNEL_2,100);
 		rv = read_DAC_mV(CHANNEL_3,&rcv_data);
 		printf("CH3 read data: %u\n", rcv_data);
-		rv = set_DAC_mV(CHANNEL_3,2034);
+		rv = set_DAC_mV(CHANNEL_3,500);
 		rv = read_DAC_mV(CHANNEL_4,&rcv_data);
 		printf("CH4 read data: %u\n", rcv_data);
-		rv = set_DAC_mV(CHANNEL_4,1432);
-		
+		rv = set_DAC_mV(CHANNEL_4,500);
+		*/
 		//printf("i2c write return: %i\n", rv);
 		
 
@@ -145,7 +178,16 @@ int main(void)
 		
 		// input = getchar();
 		//printf("You wrote %c\n", input);
-		_delay_ms(2000);
+		//_delay_ms(2000);
+		
+		
+		if((TIFR & TOV0) == 1){
+			PORTC ^= LED_GRN;
+			//PORTA ^= (1 << CH2_EN);
+			TCNT0 = 0x00;
+			TIFR |= (1<<TOV0);
+		}
+
 		
 
 	}

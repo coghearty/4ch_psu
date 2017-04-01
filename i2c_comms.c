@@ -15,7 +15,15 @@
 #define I2C_DATA_ACK	2
 #define I2C_STOP		3
 
+/*-----------------------------------------------------*/
+/*--------------GENERAL i2c FUNCTIONS------------------*/
 
+void init_i2c(void){
+	/* Initial TWI Peripheral */
+	TWSR = 0x00;   // Select Prescaler of 1
+	// SCL frequency = 11059200 / (16 + 2 * 48 * 1) = 98.743 khz
+	TWBR = 0x30;   // 48 Decimal
+}
 
 static unsigned char i2c_transmit(unsigned char type) {
 	switch(type) {
@@ -37,6 +45,9 @@ static unsigned char i2c_transmit(unsigned char type) {
 	// Return TWI Status Register, mask the prescaler bits (TWPS1,TWPS0)
 	return (TWSR & 0xF8);
 }
+
+/*-----------------------------------------------------*/
+/*---------------DAC101C08x FUNCTIONS------------------*/
 
 int set_DAC_mV(unsigned char channel, unsigned int millivolts){
 	if (millivolts > DAC_MAX_MILLIVOLTS)
@@ -185,9 +196,3 @@ int i2c_DAC101C08x_read(unsigned int dev_addr, uint16_t *data)
 	return r_val;
 }
 
-void init_i2c(void){
-	/* Initial TWI Peripheral */
-	TWSR = 0x00;   // Select Prescaler of 1
-	// SCL frequency = 11059200 / (16 + 2 * 48 * 1) = 98.743 khz
-	TWBR = 0x30;   // 48 Decimal
-}
