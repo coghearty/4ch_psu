@@ -10,8 +10,11 @@
 #define TIMERS_H_
 
 void init_timers(void);
+void set_PWM_Timer1(uint8_t duty_cycle);
 
 volatile int timer0_triggered;
-volatile int timer1_triggered;
+volatile int timer3_triggered;
+
+#define MAX_PWM	0xFF
 
 #endif /* TIMERS_H_ */

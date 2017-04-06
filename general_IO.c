@@ -11,6 +11,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+
 /*------ LED FUNCTIONS ------*/
 void CH1_led(uint8_t on){
 	if(!on)
@@ -107,19 +108,36 @@ void EN_wifi(uint8_t on){
 
 
 void init_encoders(void){
+	/*Set encoder signals as inputs and enable internal pull-ups*/
 	DDRE &= ~SW_ENC1 & ~SW_ENC2 & ~ENC1B & ~ENC1A & ~ENC2B & ~ENC2A;
 	PORTE |= SW_ENC1 | SW_ENC2;
-	EIMSK = (1<<INT5) | (1<<INT4);       // Enable pin change interrupts on port E.
+	
+	/*Configure first encoder*/
+	EIMSK |= (1<<INT5) | (1<<INT4);       // Enable pin change interrupts 4&5 on port E.
 	EICRB |= (1<< ISC41) | (1<<ISC51) | (1<<ISC50);	//INT4 falling edge trigger, INT5 rising edge.
+	encoder1_count = 0;
+	
+	/*Configure second encoder*/
+	EIMSK |= (1<<INT7) | (1<<INT6);       // Enable pin change interrupts 6&7 on port E.
+	EICRB |= (1<< ISC61) | (1<<ISC71) | (1<<ISC70);	//INT6 falling edge trigger, INT7 rising edge.
+	encoder2_count = 0;
 }
+
+void get_enc1_mV(uint16_t *enc1_mV){
+	*enc1_mV = encoder1_count * 10;
+}
+
+/*--------------------------------------------*/
+/*-------- INTERRUPT SERVICE ROUTINES --------*/
 
 /*ENC1A*/
 ISR(INT5_vect){
-	PORTA ^= CH1_EN;
+	encoder1_updated = 1;
+	
 	if (PINE & ENC1B){
 		if (PINE & ENC1A){
 			encoder1_direction = ENC_CW;
-			if(encoder1_count < 65535)
+			if(encoder1_count < MAX_ENCODER_POS)
 				++encoder1_count;
 		}
 		else{
@@ -136,7 +154,7 @@ ISR(INT5_vect){
 		}
 		else{
 			encoder1_direction = ENC_CW;
-			if(encoder1_count < 65535)
+			if(encoder1_count < MAX_ENCODER_POS)
 				++encoder1_count;
 		}
 	}
@@ -144,7 +162,8 @@ ISR(INT5_vect){
 
 /*ENC1B*/
 ISR(INT4_vect){
-	PORTA ^=CH2_EN;
+	encoder1_updated = 1;
+	
 	if(PINE & ENC1B){
 		if(PINE & ENC1A){
 			encoder1_direction = ENC_CCW;
@@ -153,20 +172,81 @@ ISR(INT4_vect){
 		}
 		else{
 			encoder1_direction = ENC_CW;
-			if(encoder1_count < 65535)
+			if(encoder1_count < MAX_ENCODER_POS)
 				++encoder1_count;
 		}
 	}
 	else{
 		if(PINE & ENC1A){
 			encoder1_direction = ENC_CW;
-			if(encoder1_count < 65535)
+			if(encoder1_count < MAX_ENCODER_POS)
 				++encoder1_count;
 		}
 		else{
 			encoder1_direction = ENC_CCW;
 			if(encoder1_count > 0)
 				--encoder1_count;
+		}
+	}
+}
+
+
+/*ENC2A*/
+ISR(INT7_vect){
+	encoder2_updated = 1;
+	
+	if (PINE & ENC2B){
+		if (PINE & ENC2A){
+			encoder2_direction = ENC_CW;
+			if(encoder2_count < MAX_ENCODER_POS)
+			++encoder2_count;
+		}
+		else{
+			encoder2_direction = ENC_CCW;
+			if(encoder2_count > 0)
+			--encoder2_count;
+		}
+	}
+	else{
+		if (PINE & ENC2A){
+			encoder2_direction = ENC_CCW;
+			if(encoder2_count > 0)
+			--encoder2_count;
+		}
+		else{
+			encoder2_direction = ENC_CW;
+			if(encoder2_count < MAX_ENCODER_POS)
+			++encoder2_count;
+		}
+	}
+}
+
+/*ENC2B*/
+ISR(INT6_vect){
+	encoder2_updated = 1;
+	
+	if(PINE & ENC2B){
+		if(PINE & ENC2A){
+			encoder2_direction = ENC_CCW;
+			if(encoder2_count > 0)
+			--encoder2_count;
+		}
+		else{
+			encoder2_direction = ENC_CW;
+			if(encoder2_count < MAX_ENCODER_POS)
+			++encoder2_count;
+		}
+	}
+	else{
+		if(PINE & ENC2A){
+			encoder2_direction = ENC_CW;
+			if(encoder2_count < MAX_ENCODER_POS)
+			++encoder2_count;
+		}
+		else{
+			encoder2_direction = ENC_CCW;
+			if(encoder2_count > 0)
+			--encoder2_count;
 		}
 	}
 }

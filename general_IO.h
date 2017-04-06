@@ -37,12 +37,17 @@ void EN_wifi(uint8_t on);
 #define ENC_CW 1
 #define ENC_FAIL 2
 #define ENCODER_STATUS_FAULT 0x01
+#define MAX_ENCODER_POS	65535
 
 volatile uint8_t encoder1_direction;
 volatile uint32_t encoder1_count;
-volatile uint8_t encoder1_status;
-volatile uint8_t last_encoder1;
+volatile uint8_t encoder1_updated;
+
+volatile uint8_t encoder2_direction;
+volatile uint32_t encoder2_count;
+volatile uint8_t encoder2_updated;
 
 void init_encoders(void);
+void get_enc1_mV(uint16_t *enc1_mV);
 
 #endif /* GENERAL_IO_H_ */

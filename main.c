@@ -92,7 +92,7 @@ int main(void)
 	
 	int rv;
 	timer0_triggered = 0;
-	timer1_triggered = 0;
+	timer3_triggered = 0;
 
 	
 	red_led(1);
@@ -105,13 +105,16 @@ int main(void)
 	_delay_ms(500);
 	
 	//PORTB |= CH1_ISET;
-	PORTB |= CH2_ISET;
+	//PORTB |= CH2_ISET;
 
 	uint16_t v_data = 2048; //4094; //0x7FF;
 	uint16_t rcv_data = 0x0000;
 	uint8_t adc_L = 0;
 	uint8_t adc_H = 0;
 	uint16_t adc_raw = 0;
+	
+	uint16_t enc1_mV = 0;
+
 	
 	//EN_power(1);
 	
@@ -120,6 +123,18 @@ int main(void)
 	while (1)
 	{
 		
+		if(encoder1_updated){
+			get_enc1_mV(&enc1_mV);
+			rv = set_DAC_mV(CHANNEL_2,enc1_mV);
+			encoder1_updated = 0;
+			printf("CH2 mV data: %u\n", enc1_mV);
+		}
+		
+		if(encoder2_updated){
+			encoder2_updated = 0;
+			set_PWM_Timer1(encoder2_count);
+			//printf("enc2 updated\n");
+		}
 		/*if(PIND & PB_SNOOZE)
 		CH4_led(0);
 		else
@@ -134,11 +149,11 @@ int main(void)
 		CH2_led(0);
 		else
 		CH2_led(1);
-		
+		*/
 		if(PIND & SW_ON)
-		CH3_led(0);
+		EN_power(1);
 		else
-		CH3_led(1);*/
+		EN_power(0);
 
 		
 		
@@ -157,14 +172,14 @@ int main(void)
 		
 
 		if(timer0_triggered){
-			toggle_green_led();
+			toggle_red_led();
 			timer0_triggered = 0;
 		}
 		
 		/*1 second timer heartbeat*/
-		if(timer1_triggered){
-			toggle_red_led();
-			timer1_triggered = 0;
+		if(timer3_triggered){
+			toggle_green_led();
+			timer3_triggered = 0;
 			puts("Hello World!");
 			rv = read_DAC_mV(CHANNEL_1,&CH1_DAC_read_mV);
 			//printf("i2c read return: %i\n", rv);
@@ -172,7 +187,7 @@ int main(void)
 			rv = set_DAC_mV(CHANNEL_1,500);
 			rv = read_DAC_mV(CHANNEL_2,&CH2_DAC_read_mV);
 			
-			rv = set_DAC_mV(CHANNEL_2,100);
+			//rv = set_DAC_mV(CHANNEL_2,100);
 			rv = read_DAC_mV(CHANNEL_3,&CH3_DAC_read_mV);
 			
 			rv = set_DAC_mV(CHANNEL_3,500);
@@ -191,6 +206,8 @@ int main(void)
 			printf("CH0 raw adc_L: %u\n", adc_L);*/
 			printf("CH0 raw adc: %u\n", adc_raw);
 			printf("ENC1 count: %u\n", encoder1_count);
+			printf("ENC2 count: %u\n", encoder2_count);
+			//printf("ENC1: %u, ENC2: %u\n", encoder2_count, encoder1_count);
 		}
 		
 
