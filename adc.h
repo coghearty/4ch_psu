@@ -14,7 +14,7 @@
 void init_adc(void);
 void enable_adc(void);
 void disable_adc(void);
-
+uint16_t read_ADC(uint8_t channel);
 
 
 #endif /* ADC_H_ */

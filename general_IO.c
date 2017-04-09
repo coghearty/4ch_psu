@@ -109,8 +109,8 @@ void EN_wifi(uint8_t on){
 
 void init_encoders(void){
 	/*Set encoder signals as inputs and enable internal pull-ups*/
-	DDRE &= ~SW_ENC1 & ~SW_ENC2 & ~ENC1B & ~ENC1A & ~ENC2B & ~ENC2A;
-	PORTE |= SW_ENC1 | SW_ENC2;
+	DDRE &= ~SW_ENC1 & ~ENC1B & ~ENC1A & ~ENC2B & ~ENC2A;
+	PORTE |= SW_ENC1;
 	
 	/*Configure first encoder*/
 	EIMSK |= (1<<INT5) | (1<<INT4);       // Enable pin change interrupts 4&5 on port E.

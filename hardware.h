@@ -23,7 +23,7 @@
 #define CH3_BOOST		BIT(7)
 
 /* Port B */
-#define CH1_ISET		BIT(4)
+//#define CH1_ISET		BIT(4)	//moved to pin PE3
 #define CH2_ISET		BIT(5)
 #define CH3_ISET		BIT(6)
 #define CH4_ISET		BIT(7)
@@ -55,10 +55,22 @@
 
 /* PORT E */
 #define SW_ENC1			BIT(2)
-#define SW_ENC2			BIT(3)
+//#define SW_ENC2			BIT(3)	//disconnected to allow CH1_ISET to be moved here.
+#define CH1_ISET		BIT(3)
 #define ENC1B			BIT(4)
 #define ENC1A			BIT(5)
 #define ENC2B			BIT(6)
 #define ENC2A			BIT(7)
+
+/*ADC PINS. Don't use the BIT macro here, since we actually use these to set the right binary bits in ADMUX*/
+/*PORT F*/
+#define CH1_ISENSE		0
+#define CH1_VSENSE		1
+#define CH2_ISENSE		2
+#define CH2_VSENSE		3
+#define CH3_ISENSE		4
+#define CH3_VSENSE		5
+#define CH4_ISENSE		6
+#define CH4_VSENSE		7
 
 #endif /* HARDWARE_H_ */
