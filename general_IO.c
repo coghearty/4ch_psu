@@ -199,24 +199,24 @@ ISR(INT7_vect){
 		if (PINE & ENC2A){
 			encoder2_direction = ENC_CW;
 			if(encoder2_count < MAX_ENCODER_POS)
-			++encoder2_count;
+				++encoder2_count;
 		}
 		else{
 			encoder2_direction = ENC_CCW;
 			if(encoder2_count > 0)
-			--encoder2_count;
+				--encoder2_count;
 		}
 	}
 	else{
 		if (PINE & ENC2A){
 			encoder2_direction = ENC_CCW;
 			if(encoder2_count > 0)
-			--encoder2_count;
+				--encoder2_count;
 		}
 		else{
 			encoder2_direction = ENC_CW;
 			if(encoder2_count < MAX_ENCODER_POS)
-			++encoder2_count;
+				++encoder2_count;
 		}
 	}
 }

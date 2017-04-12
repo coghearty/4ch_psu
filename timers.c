@@ -16,7 +16,7 @@ static void init_timer0(void){
 	*/
 	
 	/*Configure timer0 to use external 32.768kHz crystal*/
-	seconds_count = 0;
+	seconds_count = 40;
 	minutes_count = 0;
 	hours_count = 0;
 	dayofweek_count = 0;
@@ -49,9 +49,9 @@ static void init_timer1(void){
 	TCCR1A = (1<<COM1A1) | (1<<COM1B1) | (1<<COM1C1) | (1<<WGM10);
 	TCCR1B |= (1<<CS10) | (1<<WGM12);	//set to no prescale
 
-	OCR1A = 128;
-	OCR1B = 128;
-	OCR1C = 128;
+	OCR1A = 0;
+	OCR1B = 0;
+	OCR1C = 0;
 	
 }
 
@@ -62,7 +62,7 @@ static void init_timer3(void){
 	TCCR3A = (1<<COM3A1) | (1<<WGM30);
 	TCCR3B |= (1<<CS30) | (1<<WGM32);	//set to no prescale
 
-	OCR3A = 128;
+	OCR3A = 0;
 
 }
 
@@ -89,7 +89,7 @@ void init_timers(void){
 void set_PWM_CH1(uint8_t duty_cycle){
 	if(duty_cycle > MAX_PWM)
 	duty_cycle = MAX_PWM;
-	
+
 	OCR3A = duty_cycle;
 }
 
@@ -110,9 +110,11 @@ void set_PWM_CH3(uint8_t duty_cycle){
 void set_PWM_CH4(uint8_t duty_cycle){
 	if(duty_cycle > MAX_PWM)
 	duty_cycle = MAX_PWM;
-	
+
 	OCR1C = duty_cycle;
 }
+
+
 
 /*-------- INTERRUPT SERVICE ROUTINES --------*/
 ISR (TIMER0_OVF_vect){

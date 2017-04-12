@@ -171,6 +171,12 @@
     <Compile Include="general_IO.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="power_control.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="power_control.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="timers.c">
       <SubType>compile</SubType>
     </Compile>
