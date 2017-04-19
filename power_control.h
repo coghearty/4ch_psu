@@ -43,10 +43,10 @@
 #define CH4_W_NOM_MV	3100
 
 /*Individual top mA values to give desired spectrum*/
-#define CH1_R_NOM_MA	350
-#define CH2_G_NOM_MA	350
-#define CH3_B_NOM_MA	350
-#define CH4_W_NOM_MA	350
+#define CH1_R_NOM_MA	150
+#define CH2_G_NOM_MA	150
+#define CH3_B_NOM_MA	150
+#define CH4_W_NOM_MA	150
 
 void set_PWM_mA(unsigned char channel, uint16_t milliAmps);
 void set_all_power_zero();

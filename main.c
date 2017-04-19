@@ -130,11 +130,14 @@ int main(void)
 
 	uint8_t wakeup_h = 0;
 	uint8_t wakeup_m = 1;
-	uint16_t wakeup_duration_s = 45;
+	uint16_t wakeup_duration_s = 300;
 	uint16_t wakeup_t_elapsed_s = 0;
 	uint16_t flashing_timeout_s = 65;
 	uint16_t flashing_elapsed_s = 0;
-	float mA_per_second_ramp = 0;
+	float mA_per_second_ramp_R = 0;
+	float mA_per_second_ramp_G = 0;
+	float mA_per_second_ramp_B = 0;
+	float mA_per_second_ramp_W = 0;
 	unsigned int CH1_DAC_read_mV = 0;
 	
 
@@ -238,14 +241,17 @@ int main(void)
 					EN_power(1);
 					enable_adc();
 					wakeup_t_elapsed_s = 0;
-					rv = set_DAC_mV(CHANNEL_1,220); //need DAV_mv to actual function
+					rv = set_DAC_mV(CHANNEL_1,210); //need DAV_mv to actual function
 					printf("Set rv: %i\n", rv);
 					rv = read_DAC_mV(CHANNEL_1,&CH1_DAC_read_mV);
 					printf("i2c read return: %i\n", CH1_DAC_read_mV);
-					set_DAC_mV(CHANNEL_2,CH2_G_NOM_MV);
-					set_DAC_mV(CHANNEL_3,CH3_B_NOM_MV);
-					set_DAC_mV(CHANNEL_4,CH4_W_NOM_MV);
-					mA_per_second_ramp = CH1_R_NOM_MA/wakeup_duration_s; //actually need a variable for each colour here.
+					set_DAC_mV(CHANNEL_2,320);
+					//set_DAC_mV(CHANNEL_3,300);
+					set_DAC_mV(CHANNEL_4,300);
+					mA_per_second_ramp_R = CH1_R_NOM_MA/wakeup_duration_s; //actually need a variable for each colour here.
+					mA_per_second_ramp_G = CH2_G_NOM_MA/wakeup_duration_s;
+					mA_per_second_ramp_B = CH3_B_NOM_MA/wakeup_duration_s;
+					mA_per_second_ramp_W = CH4_W_NOM_MA/wakeup_duration_s;
 					printf("STATE changed to Auto-ramp state\n");
 				}
 				
@@ -276,7 +282,9 @@ int main(void)
 		CH4_led(1);
 		*/
 
-
+		if(command_ready){
+			toggle_red_led();
+		}
 		//USART_putchar(sendData);
 		
 		// input = getchar();
@@ -285,7 +293,7 @@ int main(void)
 		
 
 		if(minute_elapsed){
-			toggle_red_led();
+			//toggle_red_led();
 			minute_elapsed = 0;
 		}
 		
@@ -315,7 +323,13 @@ int main(void)
 			if(rgbw_state == RGBW_AUTO){
 				if(rgbw_auto_state == RGBW_AUTO_RAMP){
 					wakeup_t_elapsed_s++;
-					set_PWM_mA(CHANNEL_1,(uint16_t) (wakeup_t_elapsed_s*mA_per_second_ramp));
+
+					set_PWM_mA(CHANNEL_1, (uint16_t) (wakeup_t_elapsed_s/2));
+					set_PWM_mA(CHANNEL_4, (uint16_t) (wakeup_t_elapsed_s/4));
+					//set_PWM_mA(CHANNEL_1,(uint16_t) (wakeup_t_elapsed_s*mA_per_second_ramp_R));
+					//set_PWM_mA(CHANNEL_2,(uint16_t) (wakeup_t_elapsed_s*mA_per_second_ramp_G));
+					//set_PWM_mA(CHANNEL_3,(uint16_t) (wakeup_t_elapsed_s*mA_per_second_ramp_B));
+					//set_PWM_mA(CHANNEL_4,(uint16_t) (wakeup_t_elapsed_s*mA_per_second_ramp_W));
 				}
 				if(rgbw_auto_state == RGBW_AUTO_FINISH){
 					flashing_elapsed_s++;
