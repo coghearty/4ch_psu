@@ -33,6 +33,8 @@
 #define RGBW_AUTO_FINISH	2
 #define RGBW_AUTO_TIMEOUT	3
 
+//void usart_process_command();
+
 static void init_ports(void){
 	PORTA = 0x00;
 	DDRA = EN_PWR | CH1_BOOST | CH1_EN | CH2_BOOST | CH2_EN | CH3_BOOST;	//set direction register
@@ -88,13 +90,13 @@ int main(void)
 	char input;
 	/*print out the last reset cause*/
 	if (ResetSrc & PORF)
-	puts("PWR RESET\n\r");
+	puts("PWR RESET\n");
 	if (ResetSrc & EXTRF)
-	puts("EXT RESET\n\r");
+	puts("EXT RESET\n");
 	if (ResetSrc & BORF)
-	puts("BOD RESET\n\r");
+	puts("BOD RESET\n");
 	if (ResetSrc & WDRF)
-	puts("WDT RESET\n\r");
+	puts("WDT RESET\n");
 	
 	
 	init_i2c();
@@ -130,21 +132,34 @@ int main(void)
 
 	uint8_t wakeup_h = 0;
 	uint8_t wakeup_m = 1;
-	uint16_t wakeup_duration_s = 300;
+	uint16_t wakeup_duration_s = 1200;
 	uint16_t wakeup_t_elapsed_s = 0;
 	uint16_t flashing_timeout_s = 65;
 	uint16_t flashing_elapsed_s = 0;
-	float mA_per_second_ramp_R = 0;
+	/*float mA_per_second_ramp_R = 0;
 	float mA_per_second_ramp_G = 0;
 	float mA_per_second_ramp_B = 0;
-	float mA_per_second_ramp_W = 0;
+	float mA_per_second_ramp_W = 0;*/
+	uint16_t mV_ramp_sp_R = 0;
+	uint16_t mV_ramp_sp_G = 0;
+	uint16_t mV_ramp_sp_B = 0;
+	uint16_t mV_ramp_sp_W = 0;
+	uint16_t mA_ramp_sp_R = 0;
+	uint16_t mA_ramp_sp_G = 0;
+	uint16_t mA_ramp_sp_B = 0;
+	uint16_t mA_ramp_sp_W = 0;
+	uint8_t voltage_ramp_mode = 1;
+	uint8_t voltage_ramp_freq = 10;
+
 	unsigned int CH1_DAC_read_mV = 0;
 	
+	uint8_t CH1_I_limiting = 0;
+	uint8_t CH4_I_limiting = 0;
 
 	sei();	//enable global interrupts
 	while (1)
 	{
-		
+
 		if((PIND & SW_AUTO) && (PIND & SW_OFF)){
 			rgbw_state = RGBW_ON;
 		}
@@ -156,7 +171,7 @@ int main(void)
 		if((PIND & SW_ON) && (PIND & SW_OFF)){
 			rgbw_state = RGBW_AUTO;
 		}
-
+		
 		switch(rgbw_state){
 			case RGBW_OFF:
 			if(rgbw_state != rgbw_state_old){
@@ -186,37 +201,40 @@ int main(void)
 			if(encoder1_updated){
 				encoder1_updated = 0;
 				get_enc1_mV(&enc1_mV);
-				rv = set_DAC_mV(CHANNEL_2,enc1_mV);
 				rv = set_DAC_mV(CHANNEL_1,enc1_mV);
-				rv = set_DAC_mV(CHANNEL_3,enc1_mV);
+				rv = set_DAC_mV(CHANNEL_2,enc1_mV);
+				//rv = set_DAC_mV(CHANNEL_3,enc1_mV);
 				rv = set_DAC_mV(CHANNEL_4,enc1_mV);
 				printf("CH2 mV data: %u\n", enc1_mV);
 			}
 			
 			if(encoder2_updated){
 				encoder2_updated = 0;
-				set_PWM_mA(CHANNEL_1, encoder2_count*12);
+				set_PWM_mA(CHANNEL_1, encoder2_count*4);
+				set_PWM_mA(CHANNEL_2, encoder2_count*4);
+				set_PWM_mA(CHANNEL_4, encoder2_count*4);
 				//set_PWM_CH1(encoder2_count);
-				set_PWM_CH2(encoder2_count);
-				set_PWM_CH3(encoder2_count);
-				set_PWM_CH4(encoder2_count);
+				//set_PWM_CH2(encoder2_count);
+				//set_PWM_CH3(encoder2_count);
+				//set_PWM_CH4(encoder2_count);
 				printf("enc2: %u\n", encoder2_count);
 			}
 			break;
 			
 			case RGBW_AUTO:
-				if(rgbw_state != rgbw_state_old){
-					//only do at first change of state
-					rgbw_state_old = rgbw_state;
-					rgbw_auto_state = RGBW_AUTO_IDLE;
-					printf("STATE changed to Auto state\n");
-				}
+			if(rgbw_state != rgbw_state_old){
+				//only do at first change of state
+				rgbw_state_old = rgbw_state;
+				rgbw_auto_state = RGBW_AUTO_IDLE;
+				printf("STATE changed to Auto state\n");
+			}
 			break;
 		}
 		
-		switch(rgbw_auto_state){
-			case RGBW_AUTO_IDLE:
-			//We are in Auto mode, but waiting for the right time to turn on LEDs
+		if(rgbw_state == RGBW_AUTO){
+			switch(rgbw_auto_state){
+				case RGBW_AUTO_IDLE:
+				//We are in Auto mode, but waiting for the right time to turn on LEDs
 				if(rgbw_auto_state != rgbw_auto_state_old){
 					rgbw_auto_state_old = rgbw_auto_state;
 					set_all_power_zero();
@@ -231,37 +249,56 @@ int main(void)
 						rgbw_auto_state = RGBW_AUTO_RAMP;
 					}
 				}
-			break;
-			
-			case RGBW_AUTO_RAMP:
-			//Now we ramp up the LED brightness over the set time period
+				break;
+				
+				case RGBW_AUTO_RAMP:
+				//Now we ramp up the LED brightness over the set time period
 				if(rgbw_auto_state != rgbw_auto_state_old){
 					rgbw_auto_state_old = rgbw_auto_state;
 					set_all_power_zero();
 					EN_power(1);
 					enable_adc();
 					wakeup_t_elapsed_s = 0;
-					rv = set_DAC_mV(CHANNEL_1,210); //need DAV_mv to actual function
-					printf("Set rv: %i\n", rv);
-					rv = read_DAC_mV(CHANNEL_1,&CH1_DAC_read_mV);
-					printf("i2c read return: %i\n", CH1_DAC_read_mV);
-					set_DAC_mV(CHANNEL_2,320);
-					//set_DAC_mV(CHANNEL_3,300);
-					set_DAC_mV(CHANNEL_4,300);
-					mA_per_second_ramp_R = CH1_R_NOM_MA/wakeup_duration_s; //actually need a variable for each colour here.
+					
+					//Set all LED voltages to bare minimum
+					mV_ramp_sp_R = CH1_R_MIN_MV;
+					mV_ramp_sp_G = CH2_G_MIN_MV;
+					mV_ramp_sp_B = CH3_B_MIN_MV;
+					mV_ramp_sp_W = CH4_W_MIN_MV;
+					set_DAC_mV(CHANNEL_1,mV_ramp_sp_R);
+					set_DAC_mV(CHANNEL_2,mV_ramp_sp_G);
+					set_DAC_mV(CHANNEL_3,0);	//disable blue for now
+					set_DAC_mV(CHANNEL_4,mV_ramp_sp_W);
+					
+					//Set all current to just above the minimum of 30mA
+					mA_ramp_sp_R = 72; //52
+					mA_ramp_sp_G = 28;
+					mA_ramp_sp_B = 0;
+					mA_ramp_sp_W = 44;
+					set_PWM_mA(CHANNEL_1,mA_ramp_sp_R);
+					set_PWM_mA(CHANNEL_2,mA_ramp_sp_G);
+					set_PWM_mA(CHANNEL_4,mA_ramp_sp_W);
+					
+					//set mode to voltage ramping
+					voltage_ramp_mode = 1;
+					voltage_ramp_freq = 10;
+					CH1_I_limiting = 0;
+					CH4_I_limiting = 0;
+					
+					/*mA_per_second_ramp_R = CH1_R_NOM_MA/wakeup_duration_s; //actually need a variable for each colour here.
 					mA_per_second_ramp_G = CH2_G_NOM_MA/wakeup_duration_s;
 					mA_per_second_ramp_B = CH3_B_NOM_MA/wakeup_duration_s;
-					mA_per_second_ramp_W = CH4_W_NOM_MA/wakeup_duration_s;
+					mA_per_second_ramp_W = CH4_W_NOM_MA/wakeup_duration_s;*/
 					printf("STATE changed to Auto-ramp state\n");
 				}
 				
 				if(wakeup_t_elapsed_s >= wakeup_duration_s){
 					rgbw_auto_state = RGBW_AUTO_FINISH;
 				}
-			break;
-			
-			case RGBW_AUTO_FINISH:
-			/*In this case we want to start flashing the LED*/
+				break;
+				
+				case RGBW_AUTO_FINISH:
+				/*In this case we want to start flashing the LED*/
 				if(rgbw_auto_state != rgbw_auto_state_old){
 					rgbw_auto_state_old = rgbw_auto_state;
 					printf("STATE changed to auto-finish\n");
@@ -272,24 +309,30 @@ int main(void)
 					rgbw_auto_state = RGBW_AUTO_IDLE;
 				}
 				
+			}
 		}
 		
 		
 
-		/*if(PIND & PB_SNOOZE)
-		CH4_led(0);
-		else
-		CH4_led(1);
-		*/
 
-		if(command_ready){
-			toggle_red_led();
+
+		if(usart_command_ready){
+			//toggle_red_led();
+			usart_command_ready = 0;
+			if(usart_command_overflow){
+				usart_clear_command();
+				printf("Command too long. Must be max 8 chars\n");
+				usart_command_overflow = 0;
+				}else{
+				usart_copy_command();
+				printf("Command entered: %s\n",command_in);
+				usart_process_command();
+				printf("command processed\n");
+				
+			}
+			
 		}
-		//USART_putchar(sendData);
-		
-		// input = getchar();
-		//printf("You wrote %c\n", input);
-		//_delay_ms(2000);
+
 		
 
 		if(minute_elapsed){
@@ -302,34 +345,73 @@ int main(void)
 			toggle_green_led();
 			timer0_triggered = 0;
 
-			//rv = read_DAC_mV(CHANNEL_1,&CH1_DAC_read_mV);
-			//printf("i2c read return: %i\n", rv);
-			//rv = set_DAC_mV(CHANNEL_1,500);
-
 			for(uint8_t i=0; i<8; i++){
 				adc_raw = read_ADC(i);
 				//printf("adc: %u\n",adc_raw);
 			}
 
-			//printf("CH0 raw adc: %u\n", adc_raw);
-			//printf("ENC1 count: %u\n", encoder1_count);
-			//printf("ENC2 count: %u\n", encoder2_count);
-			printf("%u :", dayofweek_count);
-			printf(" %u :", hours_count);
-			printf(" %u :", minutes_count);
-			printf(" %u\n", seconds_count);
-			//printf("ENC1: %u, ENC2: %u\n", encoder2_count, encoder1_count);
+			print_current_time();			
+
 			
 			if(rgbw_state == RGBW_AUTO){
 				if(rgbw_auto_state == RGBW_AUTO_RAMP){
 					wakeup_t_elapsed_s++;
+					
 
-					set_PWM_mA(CHANNEL_1, (uint16_t) (wakeup_t_elapsed_s/2));
-					set_PWM_mA(CHANNEL_4, (uint16_t) (wakeup_t_elapsed_s/4));
-					//set_PWM_mA(CHANNEL_1,(uint16_t) (wakeup_t_elapsed_s*mA_per_second_ramp_R));
-					//set_PWM_mA(CHANNEL_2,(uint16_t) (wakeup_t_elapsed_s*mA_per_second_ramp_G));
-					//set_PWM_mA(CHANNEL_3,(uint16_t) (wakeup_t_elapsed_s*mA_per_second_ramp_B));
-					//set_PWM_mA(CHANNEL_4,(uint16_t) (wakeup_t_elapsed_s*mA_per_second_ramp_W));
+					//if both channels are already in current limit mode, there is no point in ramping slowly.
+					if((CH1_I_limiting>3) && (CH4_I_limiting==3)){
+						voltage_ramp_freq = 1;
+						}else{
+						
+						if(!(PINA & CH1_ILIM)){
+							CH1_I_limiting++;
+						}
+						
+						if(!(PINC & CH4_ILIM)){
+							CH4_I_limiting++;
+						}
+					}
+
+					if(voltage_ramp_mode == 1){
+						if((wakeup_t_elapsed_s % voltage_ramp_freq) == 0){
+							printf("elapsed wakeup time: %u\n", wakeup_t_elapsed_s);
+							if(mV_ramp_sp_R < CH1_R_NOM_MV){
+								mV_ramp_sp_R = mV_ramp_sp_R + DAC_MIN_MV_STEP;
+								set_DAC_mV(CHANNEL_1,mV_ramp_sp_R);
+							}
+							if(mV_ramp_sp_G < CH2_G_NOM_MV){
+								mV_ramp_sp_G = mV_ramp_sp_G + DAC_MIN_MV_STEP;
+								set_DAC_mV(CHANNEL_2,mV_ramp_sp_G);
+								}else{
+								voltage_ramp_mode = 0;
+							}
+							if(mV_ramp_sp_W < CH4_W_NOM_MV){
+								mV_ramp_sp_W = mV_ramp_sp_W + DAC_MIN_MV_STEP;
+								set_DAC_mV(CHANNEL_4,mV_ramp_sp_W);
+								}else{
+								//voltage_ramp_mode = 0;
+							}
+						}
+						}else{
+						if((wakeup_t_elapsed_s % 5) == 0){
+							if(mA_ramp_sp_R < CH1_R_NOM_MA){
+								mA_ramp_sp_R = mA_ramp_sp_R + PWM_MIN_MA_STEP;
+								set_PWM_mA(CHANNEL_1,mA_ramp_sp_R);
+								printf("mA setpoint R: %u\n",mA_ramp_sp_R);
+							}
+							if(mA_ramp_sp_G < CH2_G_NOM_MA){
+								mA_ramp_sp_G = mA_ramp_sp_G + PWM_MIN_MA_STEP;
+								set_PWM_mA(CHANNEL_2, mA_ramp_sp_G);
+								printf("mA setpoint G: %u\n",mA_ramp_sp_G);
+							}
+							if(mA_ramp_sp_W < CH4_W_NOM_MA){
+								mA_ramp_sp_W = mA_ramp_sp_W + PWM_MIN_MA_STEP;
+								set_PWM_mA(CHANNEL_4, mA_ramp_sp_W);
+								printf("mA setpoint W: %u\n",mA_ramp_sp_W);
+							}
+						}
+					}
+
 				}
 				if(rgbw_auto_state == RGBW_AUTO_FINISH){
 					flashing_elapsed_s++;
@@ -343,3 +425,4 @@ int main(void)
 	return 0;
 }
 
+/*void usart_process_command(){	/*if(command_in[0]=='T'){		if(command_in[1]=='?'){			puts("dummy\n");		}	}else{		puts("command unknown\n");	}*/		/*switch(command_in[0]){		case 'G':			if(command_in[1] == '?'){					puts("dummy\n");			}else if(command_in[1] == '='){				puts("dummy2");			}			break;		default:			puts("Command not recognised\n");			break;	}}*/

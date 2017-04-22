@@ -27,6 +27,7 @@
 #define DAC_MAX_VAL				0xFFC	//4092
 #define DAC_MIN_MILLIVOLTS		0
 #define DAC_MAX_MILLIVOLTS		2048
+#define DAC_MIN_MV_STEP			2		//Last 2 LSB of DAC are always 0
 
 #define CHANNEL_1		0
 #define CHANNEL_2		1

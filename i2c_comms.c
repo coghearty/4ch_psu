@@ -106,6 +106,7 @@ int i2c_DAC101C08x_write(unsigned int dev_addr, uint8_t config, uint16_t data) {
 	// Take the bottom octet of data
 	uint8_t lower_msg = (data & 0x00FF);
 	printf("DAC write %u\n",data);
+
 	unsigned char n = 0;
 	unsigned char twi_status;
 	char r_val = 2;

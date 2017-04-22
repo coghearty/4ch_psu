@@ -30,23 +30,32 @@
 
 /*Individual LED maximums*/
 /*Note these are all 100mV less than abs max for safety*/
-#define CH1_R_MAX_MV	2500
-#define CH2_G_MAX_MV	3800
-#define CH3_B_MAX_MV	3600
-#define CH4_W_MAX_MV	3600
+/*All voltages are multiplied by a factor of 10 with the external circuitry*/
+#define CH1_R_MAX_MV	250
+#define CH2_G_MAX_MV	380
+#define CH3_B_MAX_MV	360
+#define CH4_W_MAX_MV	360
 #define RGBW_MAX_MA		350
 
 /*Individual LED nominal values*/
-#define CH1_R_NOM_MV	2200
-#define CH2_G_NOM_MV	3300
-#define CH3_B_NOM_MV	3100
-#define CH4_W_NOM_MV	3100
+#define CH1_R_NOM_MV	220
+#define CH2_G_NOM_MV	270	//330
+#define CH3_B_NOM_MV	310
+#define CH4_W_NOM_MV	320
+
+/*Individual LED minimum turn-on voltages*/
+#define CH1_R_MIN_MV	150
+#define CH2_G_MIN_MV	210
+#define CH3_B_MIN_MV	230
+#define CH4_W_MIN_MV	230
 
 /*Individual top mA values to give desired spectrum*/
-#define CH1_R_NOM_MA	150
-#define CH2_G_NOM_MA	150
-#define CH3_B_NOM_MA	150
-#define CH4_W_NOM_MA	150
+#define CH1_R_NOM_MA	200
+#define CH2_G_NOM_MA	200
+#define CH3_B_NOM_MA	200
+#define CH4_W_NOM_MA	420
+
+#define PWM_MIN_MA_STEP	4
 
 void set_PWM_mA(unsigned char channel, uint16_t milliAmps);
 void set_all_power_zero();

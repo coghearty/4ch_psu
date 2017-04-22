@@ -7,7 +7,13 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <stdio.h>
 #include "timers.h"
+
+volatile int seconds_count;
+volatile int minutes_count;
+volatile int hours_count;
+volatile int dayofweek_count;
 
 static void init_timer0(void){
 	/*TCNT0 = 0x00;	//reset the timer to zero
@@ -24,7 +30,7 @@ static void init_timer0(void){
 	/*clear OCIE0 and TOIE0 to disable interrupts before changing clock source*/
 	TIMSK = 0x00;
 	/*change clock source to external crystal*/
-	ASSR |= (1<<AS0);	
+	ASSR |= (1<<AS0);
 	
 	/*set prescale to 128*/
 	TCCR0 = (1<<CS02) | (1<<CS00);
@@ -42,11 +48,12 @@ static void init_timer0(void){
 	TIMSK = (1<<TOIE0);	//enable overflow interrupt
 }
 
-/*TIMER1 is configured as a PWM output*/
+/*TIMER1 is configured as a PWM output for CH2, CH3 & CH4 I-set*/
 static void init_timer1(void){
 	/*Set compare output mode for channels A,B,C to "Clear on compare match."*/
-	/*Set mode to PWM 8-bit (WGM10 and WGM12)*/
+	/*Set mode to Fast PWM 10-bit (WGM10 and WGM12)*/
 	TCCR1A = (1<<COM1A1) | (1<<COM1B1) | (1<<COM1C1) | (1<<WGM10);
+	//TCCR1A = (1<<COM1A1) | (1<<COM1B1) | (1<<COM1C1) | (1<<WGM10) | (1<<WGM11);
 	TCCR1B |= (1<<CS10) | (1<<WGM12);	//set to no prescale
 
 	OCR1A = 0;
@@ -55,11 +62,13 @@ static void init_timer1(void){
 	
 }
 
-/*TIMER3 is configured as a PWM output*/
+/*TIMER3 is configured as a PWM output for CH1 I-set*/
 static void init_timer3(void){
 	/*Set compare output mode for channel A to "Clear on compare match."*/
 	/*Set mode to PWM 8-bit (WGM10 and WGM12)*/
 	TCCR3A = (1<<COM3A1) | (1<<WGM30);
+	//set mode to Fast PWM 10bit (WGM30, WGM31 & WGM32)
+	//TCCR3A = (1<<COM3A1) | (1<<WGM31) | (1<<WGM30);
 	TCCR3B |= (1<<CS30) | (1<<WGM32);	//set to no prescale
 
 	OCR3A = 0;
@@ -87,33 +96,39 @@ void init_timers(void){
 }
 
 void set_PWM_CH1(uint8_t duty_cycle){
-	if(duty_cycle > MAX_PWM)
-	duty_cycle = MAX_PWM;
+	if(duty_cycle > MAX_PWM_8BIT)
+	duty_cycle = MAX_PWM_8BIT;
 
 	OCR3A = duty_cycle;
 }
 
 void set_PWM_CH2(uint8_t duty_cycle){
-	if(duty_cycle > MAX_PWM)
-	duty_cycle = MAX_PWM;
+	if(duty_cycle > MAX_PWM_8BIT)
+	duty_cycle = MAX_PWM_8BIT;
 	
 	OCR1A = duty_cycle;
 }
 
 void set_PWM_CH3(uint8_t duty_cycle){
-	if(duty_cycle > MAX_PWM)
-	duty_cycle = MAX_PWM;
+	if(duty_cycle > MAX_PWM_8BIT)
+	duty_cycle = MAX_PWM_8BIT;
 	
 	OCR1B = duty_cycle;
 }
 
 void set_PWM_CH4(uint8_t duty_cycle){
-	if(duty_cycle > MAX_PWM)
-	duty_cycle = MAX_PWM;
+	if(duty_cycle > MAX_PWM_8BIT)
+	duty_cycle = MAX_PWM_8BIT;
 
 	OCR1C = duty_cycle;
 }
 
+void print_current_time(){
+	printf("%u :", dayofweek_count);
+	printf(" %u :", hours_count);
+	printf(" %u :", minutes_count);
+	printf(" %u\n", seconds_count);
+}
 
 
 /*-------- INTERRUPT SERVICE ROUTINES --------*/

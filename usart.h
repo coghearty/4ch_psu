@@ -16,15 +16,18 @@
 volatile unsigned char data_in[8];
 unsigned char command_in[8];
 
-volatile unsigned char data_count;
-volatile unsigned char command_ready;
+volatile unsigned char usart_data_count;
+volatile unsigned char usart_command_ready;
+volatile unsigned char usart_command_overflow;
 
 void init_PC_serial(unsigned int ubrr);
 void USART_putchar(unsigned char c, FILE *stream );
 void USART_getchar(FILE *stream);
-void copy_command();
+void usart_copy_command();
+void usart_clear_command();
+void usart_process_command();
 
-FILE usart_output = FDEV_SETUP_STREAM(USART_putchar, NULL, _FDEV_SETUP_WRITE);
-FILE usart_input = FDEV_SETUP_STREAM(NULL, USART_getchar, _FDEV_SETUP_READ);
+FILE usart_output;
+FILE usart_input;
 
 #endif /* USART_H_ */
