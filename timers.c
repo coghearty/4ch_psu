@@ -10,10 +10,12 @@
 #include <stdio.h>
 #include "timers.h"
 
-volatile int seconds_count;
-volatile int minutes_count;
-volatile int hours_count;
-volatile int dayofweek_count;
+volatile uint8_t seconds_count;
+volatile uint8_t minutes_count;
+volatile uint8_t hours_count;
+volatile uint8_t dayofweek_count;
+volatile uint8_t wakeup_h;
+volatile uint8_t wakeup_m;
 
 static void init_timer0(void){
 	/*TCNT0 = 0x00;	//reset the timer to zero
@@ -128,6 +130,13 @@ void print_current_time(){
 	printf(" %u :", hours_count);
 	printf(" %u :", minutes_count);
 	printf(" %u\n", seconds_count);
+}
+
+void print_wakeup_time(){
+	//printf("%u :", dayofweek_count);
+	printf(" %u :", wakeup_h);
+	printf(" %u\n", wakeup_m);
+
 }
 
 

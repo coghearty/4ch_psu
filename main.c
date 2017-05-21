@@ -130,9 +130,7 @@ int main(void)
 	uint8_t rgbw_auto_state = RGBW_AUTO_IDLE;
 	uint8_t rgbw_auto_state_old = 100;
 
-	uint8_t wakeup_h = 0;
-	uint8_t wakeup_m = 1;
-	uint16_t wakeup_duration_s = 1200;
+	uint16_t wakeup_duration_s = 1800;
 	uint16_t wakeup_t_elapsed_s = 0;
 	uint16_t flashing_timeout_s = 65;
 	uint16_t flashing_elapsed_s = 0;
@@ -155,6 +153,11 @@ int main(void)
 	
 	uint8_t CH1_I_limiting = 0;
 	uint8_t CH4_I_limiting = 0;
+	
+	hours_count = 17;
+	minutes_count = 28;
+	wakeup_h = 5;
+	wakeup_m = 15;
 
 	sei();	//enable global interrupts
 	while (1)
@@ -327,8 +330,6 @@ int main(void)
 				usart_copy_command();
 				printf("Command entered: %s\n",command_in);
 				usart_process_command();
-				printf("command processed\n");
-				
 			}
 			
 		}
@@ -342,7 +343,6 @@ int main(void)
 		
 		/*1 second timer heartbeat*/
 		if(timer0_triggered){
-			toggle_green_led();
 			timer0_triggered = 0;
 
 			for(uint8_t i=0; i<8; i++){
@@ -350,6 +350,9 @@ int main(void)
 				//printf("adc: %u\n",adc_raw);
 			}
 
+			//if(rgbw_state == RGBW_ON){
+				toggle_green_led();
+			//}
 			print_current_time();			
 
 			
